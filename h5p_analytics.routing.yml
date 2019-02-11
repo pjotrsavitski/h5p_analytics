@@ -1,0 +1,17 @@
+
+h5p_analytics.module_configuration_form:
+  path: '/admin/config/h5p_analytics'
+  defaults:
+    _form: '\Drupal\h5p_analytics\Form\ModuleConfigurationForm'
+    _title: 'H5P Analytics module configuration'
+  requirements:
+    _permission: 'administer site configuration'
+
+h5p_analytics.lrs_controller_xapi:
+  path: '/h5p_analytics/xapi'
+  defaults:
+    _controller: '\Drupal\h5p_analytics\Controller\LrsController::xapi'
+    _title: 'test'
+  methods: [POST]
+  requirements:
+    _access: 'TRUE'
