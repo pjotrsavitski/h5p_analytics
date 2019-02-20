@@ -23,7 +23,6 @@ Module integrates with H5P on the client size (covering both internal content wi
 * Add better handling of different response cases (come up with a solution for request timeout).
 * Make proper use of DI where appropriate instead of using `\Drupal::service()`.
 * See if it would make sense to remove the statement data from the request log after a certain period of time (storing that indefinitely seems wasteful and pointless).
-* Add a functionality that would allow one to test if used LRS connection data is correct. Making a test request to the LRS might be good enough (make sure that URI exists and is an LRS + authentication data is correct).
 * Add token checks to the xAPI statements AJAX endpoint so that it could not be easily spammed
 
 ## Issues

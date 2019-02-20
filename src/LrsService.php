@@ -113,7 +113,7 @@ class LrsService implements LrsServiceInterface {
   /**
    * {@inheritdoc}
    */
-  public function sendToLrs(array $data) {
+  public function sendToLrs(array $data, bool $bypass_request_log = FALSE) {
     $config = $this->configFactory->get(static::SETTINGS);
     $endpoint = $config->get('xapi_endpoint');
     $authUser = $config->get('key');
@@ -148,17 +148,19 @@ class LrsService implements LrsServiceInterface {
         ]
       ];
       $this->loggerFactory->get('h5p_analytics')->error(json_encode($debug));
-      // TODO This could throw an exception, needs to be handled
-      $this->connection->insert('h5p_analytics_request_log')
-      ->fields([
-        'code' => $e->getCode(),
-        'reason' => $e->hasResponse() ? $e->getResponse()->getReasonPhrase() : '',
-        'error' => $e->getMessage(),
-        'count' => sizeof($data),
-        'data' => json_encode($data),
-        'created' => REQUEST_TIME,
-      ])
-      ->execute();
+      if (!$bypass_request_log) {
+        // TODO This could throw an exception, needs to be handled
+        $this->connection->insert('h5p_analytics_request_log')
+        ->fields([
+          'code' => $e->getCode(),
+          'reason' => $e->hasResponse() ? $e->getResponse()->getReasonPhrase() : '',
+          'error' => $e->getMessage(),
+          'count' => sizeof($data),
+          'data' => json_encode($data),
+          'created' => REQUEST_TIME,
+        ])
+        ->execute();
+      }
       throw $e;
     } catch (\Exception $e) {
       // This one mostly happens when cURL errors occur

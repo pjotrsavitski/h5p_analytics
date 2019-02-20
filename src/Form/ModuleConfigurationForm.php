@@ -4,6 +4,9 @@ namespace Drupal\h5p_analytics\Form;
 
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Ajax\AjaxResponse;
+use Drupal\Core\Ajax\HtmlCommand;
+use GuzzleHttp\Exception\RequestException;
 
 /**
  * Class ModuleConfigurationForm.
@@ -36,6 +39,13 @@ class ModuleConfigurationForm extends ConfigFormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config(static::SETTINGS);
+
+    $form['connection_test_messages'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'id' => 'connection-test-messages',
+      ],
+    ];
 
     $form['lrs'] = [
       '#type' => 'fieldset',
@@ -80,7 +90,20 @@ class ModuleConfigurationForm extends ConfigFormBase {
       '#default_value' => $config->get('batch_size'),
     ];
 
-    return parent::buildForm($form, $form_state);
+    $build = parent::buildForm($form, $form_state);
+
+    $build['actions']['test_connection'] = [
+      '#type' => 'button',
+      '#name' => 'test_connection',
+      '#ajax' => [
+        'callback' => [$this, 'testConnectionCallback'],
+        'effect' => 'fade',
+      ],
+      '#value' => $this->t('Test LRS connection'),
+      '#disabled' => ($config->get('xapi_endpoint') && $config->get('key') && $config->get('secret')) ? FALSE : TRUE,
+    ];
+
+    return $build;
   }
 
   /**
@@ -95,6 +118,41 @@ class ModuleConfigurationForm extends ConfigFormBase {
     ->set('batch_size', $values['batch_size'])
     ->save();
     parent::submitForm($form, $form_state);
+  }
+
+  /**
+   * AJAX callback for testing LRS connnection, displays status messages.
+   *
+   * @param  array              $form
+   *   Form
+   * @param  Drupal\Core\Form\FormStateInterface $form_state
+   *   Form state
+   *
+   * @return Drupal\Core\Ajax\AjaxResponse
+   *   AjaxResponse with command to display status mesages
+   */
+  public function testConnectionCallback(array &$form, FormStateInterface $form_state) {
+    $messenger = \Drupal::messenger();
+
+    try {
+      // TODO Might make sense to create s standalone method that would use the current values and not the already stored ones
+      $response = \Drupal::service('h5p_analytics.lrs')->sendToLrs([], TRUE);
+      $messenger->addMessage($this->t('Connection to LRS service is working well. Service responded with code %status and message %message.', ['%status' => $response->getStatusCode(), '%message' => $response->getReasonPhrase()]), 'status');
+    } catch (RequestException $e) {
+      $messenger->addMessage($this->t('Service responsed with code %code and message %message.', ['%code' => $e->getCode(), '%message' => $e->hasResponse() ? $e->getResponse()->getReasonPhrase() : '']), 'warning');
+      $messenger->addMessage($e->getMessage(), 'error');
+    } catch (\Exception $e) {
+      $messenger->addMessage($e->getMessage(), 'error');
+    }
+
+    $response = new AjaxResponse();
+    $status_messages = array('#type' => 'status_messages');
+    $messages = \Drupal::service('renderer')->renderRoot($status_messages);
+    if (!empty($messages)) {
+      $response->addCommand(new HtmlCommand('#connection-test-messages', $messages));
+    }
+
+    return $response;
   }
 
 }
