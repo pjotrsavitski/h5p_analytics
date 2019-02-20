@@ -7,6 +7,7 @@
 
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 
 /**
  * Implements hook_help().
@@ -15,9 +16,11 @@ function h5p_analytics_help($route_name, RouteMatchInterface $route_match) {
   switch ($route_name) {
     // Main module help for the h5p_analytics module.
     case 'help.page.h5p_analytics':
+      $link = Link::createFromRoute(t('LRS statisstics page'), 'h5p_analytics.lrs_statitics_page')->toString();
       $output = '';
       $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('H5P xAPI LRS integration') . '</p>';
+      $output .= '<p>' . t('H5P xAPI LRS integration module collects any statements from both within the internal and external (embed) pages with H5P content and sends those to the LRS.') . '</p>';
+      $output .= '<p>' . t('Please visit the @link to see some data for statements being sent and problematic HTTP requests.', ['@link' => $link]) . '</p>';
       return $output;
 
     default:

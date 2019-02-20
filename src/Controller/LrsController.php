@@ -8,6 +8,8 @@ use Drupal\Core\Queue\QueueFactory;
 use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Drupal\Core\Database\Connection;
+use Drupal\h5p_analytics\LrsServiceInterface;
 
 /**
  * Class LrsController.
@@ -16,36 +18,56 @@ class LrsController extends ControllerBase {
 
   /**
    * H5P analytics statements queue
+   *
    * @var \Drupal\Core\Queue\QueueInterface
    */
   protected $statementsQueue;
 
   /**
    * H5P analytics logger
+   *
    * @var \Drupal\Core\Logger\LoggerChannelInterface
    */
   protected $logger;
 
   /**
-   * Controller constructor
-   * @param QueueFactory                  $queueFactory  Queue factory
-   * @param LoggerChannelFactoryInterface $loggerFactory Logger factory
+   * LRS Service
+   *
+   * @var Drupal\h5p_analytics\LrsServiceInterface
    */
-  public function __construct(QueueFactory $queue_factory, LoggerChannelFactoryInterface $logger_factory) {
+  protected $lrs;
+
+  /**
+   * Controller constructor
+   *
+   * @param QueueFactory                  $queueFactory
+   *   Queue factory
+   * @param LoggerChannelFactoryInterface $loggerFactory
+   *   Logger factory
+   * @param Connection                    $connection
+   *   Database connection
+   */
+  public function __construct(QueueFactory $queue_factory, LoggerChannelFactoryInterface $logger_factory, LrsServiceInterface $lrs) {
     $this->statementsQueue = $queue_factory->get('h5p_analytics_statements');
     $this->logger = $logger_factory->get('h5p_analytics');
+    $this->lrs = $lrs;
   }
 
   /**
-   * [create description]
-   * @param  ContainerInterface $container [description]
-   * @return [type]                        [description]
+   * Create self with injected dependencies
+   *
+   * @param  ContainerInterface $container
+   *   DI container
+   *
+   * @return Drupal\h5p_analytics\Controller
+   *   Controller instance
    */
   public static function create(ContainerInterface $container) {
     $queueFactory = $container->get('queue');
     $loggerFactory = $container->get('logger.factory');
+    $lrs = $container->get('h5p_analytics.lrs');
 
-    return new static($queueFactory, $loggerFactory);
+    return new static($queueFactory, $loggerFactory, $lrs);
   }
 
   /**
@@ -79,6 +101,66 @@ class LrsController extends ControllerBase {
     }
 
     return new JsonResponse($data, 200);
+  }
+
+  /**
+   * LRS statistics page
+   *
+   * @return array
+   *   Page structure definition
+   */
+  public function statistics() {
+    $response['heading'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h1',
+      '#value' => $this->t('H5P analytics LRS statistics'),
+    ];
+
+    $response['statements'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['statement-statistics'],
+      ],
+    ];
+    $response['statements']['heading'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h2',
+      '#value' => $this->t('LRS xAPI statement statistics'),
+    ];
+    $response['statements']['table'] = [
+      '#type' => 'table',
+      '#attributes' => [
+        'class' => ['statement-statistics'],
+      ],
+      '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Total')],
+      '#rows' => array_map(function($single) {
+        return [$single->code, $single->reason, $single->total];
+      }, $this->lrs->getStatementStatistics()),
+    ];
+
+    $response['requests'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['request-statistics'],
+      ],
+    ];
+    $response['requests']['heading'] = [
+      '#type' => 'html_tag',
+      '#tag' => 'h2',
+      '#value' => $this->t('LRS xAPI statement HTTP request statistics'),
+    ];
+    $response['requests']['table'] = [
+      '#type' => 'table',
+      '#attributes' => [
+        'class' => ['statement-statistics'],
+      ],
+      '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Error'), $this->t('Total')],
+      '#rows' => array_map(function($single) {
+        return [$single->code, $single->reason, $single->error, $single->total];
+      }, $this->lrs->getRequestStatistics()),
+    ];
+
+    return $response;
   }
 
 }

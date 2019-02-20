@@ -11,7 +11,16 @@ h5p_analytics.lrs_controller_xapi:
   path: '/h5p_analytics/xapi'
   defaults:
     _controller: '\Drupal\h5p_analytics\Controller\LrsController::xapi'
-    _title: 'test'
+    _title: 'xAPI statement endpoint'
   methods: [POST]
   requirements:
     _access: 'TRUE'
+
+h5p_analytics.lrs_statitics_page:
+  path: 'admin/h5p_analytics/statistics'
+  defaults:
+    _controller: '\Drupal\h5p_analytics\Controller\LrsController::statistics'
+    _title: 'xAPI LRS statement statistics'
+  methods: [GET]
+  requirements:
+    _permission: 'administer site configuration'

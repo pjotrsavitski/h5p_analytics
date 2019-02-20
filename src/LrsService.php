@@ -7,6 +7,7 @@ use Drupal\Core\Config\ConfigFactoryInterface;
 use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 use Drupal\h5p_analytics\Exception\MissingConfigurationException;
+use Drupal\Core\Database\Connection;
 
 /**
  * Class LrsService.
@@ -50,13 +51,30 @@ class LrsService implements LrsServiceInterface {
    */
   protected $httpClient;
   /**
-   * Constructs a new LrsService object.
+   * Database connection
+   *
+   * @var Drupal\Core\Database\Connection
    */
-  public function __construct(ContainerAwareInterface $queue, LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, ClientInterface $http_client) {
+  protected $connection;
+
+  /**
+   * Constructs a new LrsService instance with injected dependencies
+   *
+   * @param Symfony\Component\DependencyInjection\ContainerAwareInterface $queue
+   *   Queue service
+   * @param Drupal\Core\Logger\LoggerChannelFactoryInterface              $config_factory
+   *   Logger factory
+   * @param GuzzleHttp\ClientInterface                                    $http_client
+   *   Http client
+   * @param Drupal\Core\Database\Connection                               $connection
+   *   Database connection
+   */
+  public function __construct(ContainerAwareInterface $queue, LoggerChannelFactoryInterface $logger_factory, ConfigFactoryInterface $config_factory, ClientInterface $http_client, Connection $connection) {
     $this->queue = $queue;
     $this->loggerFactory = $logger_factory;
     $this->configFactory = $config_factory;
     $this->httpClient = $http_client;
+    $this->connection = $connection;
   }
 
    /**
@@ -112,7 +130,7 @@ class LrsService implements LrsServiceInterface {
       'headers' => [
         'X-Experience-API-Version' => '1.0.1',
       ],
-      'timeout' => 45,
+      'timeout' => 45.0,
     ];
 
     try {
@@ -131,7 +149,7 @@ class LrsService implements LrsServiceInterface {
       ];
       $this->loggerFactory->get('h5p_analytics')->error(json_encode($debug));
       // TODO This could throw an exception, needs to be handled
-      \Drupal::service('database')->insert('h5p_analytics_request_log')
+      $this->connection->insert('h5p_analytics_request_log')
       ->fields([
         'code' => $e->getCode(),
         'reason' => $e->hasResponse() ? $e->getResponse()->getReasonPhrase() : '',
@@ -143,10 +161,37 @@ class LrsService implements LrsServiceInterface {
       ->execute();
       throw $e;
     } catch (\Exception $e) {
-      // TODO Need to make sure this one even exists
+      // This one mostly happens when cURL errors occur
       $this->loggerFactory->get('h5p_analytics')->error($e->getMessage());
       throw $e;
     }
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getStatementStatistics() {
+    $query = $this->connection->select('h5p_analytics_statement_log', 'asl')
+    ->fields('asl', ['code']);
+    $query->groupBy('asl.code');
+    $query->addExpression('ANY_VALUE(asl.reason)', 'reason');
+    $query->addExpression('SUM(asl.count)', 'total');
+
+    return $query->execute()->fetchAll();
+  }
+
+  /**
+   * {@inheritdoc}
+   */
+  public function getRequestStatistics() {
+    $query = $this->connection->select('h5p_analytics_request_log', 'arl')
+    ->fields('arl', ['code']);
+    $query->groupBy('arl.code');
+    $query->addExpression('ANY_VALUE(arl.reason)', 'reason');
+    $query->addExpression('ANY_VALUE(arl.error)', 'error');
+    $query->addExpression('SUM(arl.count)', 'total');
+
+    return $query->execute()->fetchAll();
   }
 
 }
