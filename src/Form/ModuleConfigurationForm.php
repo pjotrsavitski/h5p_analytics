@@ -58,6 +58,7 @@ class ModuleConfigurationForm extends ConfigFormBase {
       '#title' => $this->t('xAPI Endpoint'),
       '#description' => $this->t('xAPI Endpoint URL (no trailing slash)'),
       '#weight' => '0',
+      '#size' => 64,
       '#default_value' => $config->get('xapi_endpoint'),
     ];
     $form['lrs']['key'] = [
