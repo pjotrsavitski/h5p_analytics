@@ -11,6 +11,9 @@ A Drupal 8 integration of Experience API (xAPI) statements emitted by H5P conten
 ## Installation
 
 * Add to `/modules` directory and activate
+* Make sure that required libraries are installed in `DRUPAL_WEB_ROOT/libraries`. Use `h5p_analytics.libraries.yml` as a source for information
+  - [d3.js](https://d3js.org/) in `libraries/d3` with only `d3.min.js` being used
+  - [c3.js](https://c3js.org/) in `libraries/c3` with only `c3.min.js` and `c3.min.css` being used
 * Fill in the LRS configuration data
 * Setup the cron job to be triggered every 30 minutes
 
@@ -24,6 +27,7 @@ Module integrates with H5P on the client size (covering both internal content wi
 * Make proper use of DI where appropriate instead of using `\Drupal::service()`.
 * See if it would make sense to remove the statement data from the request log after a certain period of time (storing that indefinitely seems wasteful and pointless).
 * Add token checks to the xAPI statements AJAX endpoint so that it could not be easily spammed
+* Allow downloading statement log and request log data as CSV (having possibility to select a period is a plus)
 
 ## Issues
 

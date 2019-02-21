@@ -110,10 +110,24 @@ class LrsController extends ControllerBase {
    *   Page structure definition
    */
   public function statistics() {
+    $statement_stats = $this->lrs->getStatementStatistics();
+    $request_stats = $this->lrs->getRequestStatistics();
+
     $response['heading'] = [
       '#type' => 'html_tag',
       '#tag' => 'h1',
       '#value' => $this->t('H5P analytics LRS statistics'),
+      '#attached' => [
+        'library' => [
+          'h5p_analytics/statistics'
+        ],
+        'drupalSettings' => [
+          'h5pAnalyticsStatisticsData' => [
+            'statements' => $statement_stats,
+            'requests' => $request_stats,
+          ],
+        ],
+      ],
     ];
 
     $response['statements'] = [
@@ -127,6 +141,12 @@ class LrsController extends ControllerBase {
       '#tag' => 'h2',
       '#value' => $this->t('LRS xAPI statement statistics'),
     ];
+    $response['statements']['graph'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['graph-container'],
+      ],
+    ];
     $response['statements']['table'] = [
       '#type' => 'table',
       '#attributes' => [
@@ -135,7 +155,7 @@ class LrsController extends ControllerBase {
       '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Total')],
       '#rows' => array_map(function($single) {
         return [$single->code, $single->reason, $single->total];
-      }, $this->lrs->getStatementStatistics()),
+      }, $statement_stats),
     ];
 
     $response['requests'] = [
@@ -149,6 +169,12 @@ class LrsController extends ControllerBase {
       '#tag' => 'h2',
       '#value' => $this->t('LRS xAPI statement HTTP request statistics'),
     ];
+    $response['requests']['graph'] = [
+      '#type' => 'container',
+      '#attributes' => [
+        'class' => ['graph-container'],
+      ],
+    ];
     $response['requests']['table'] = [
       '#type' => 'table',
       '#attributes' => [
@@ -157,7 +183,7 @@ class LrsController extends ControllerBase {
       '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Error'), $this->t('Total')],
       '#rows' => array_map(function($single) {
         return [$single->code, $single->reason, $single->error, $single->total];
-      }, $this->lrs->getRequestStatistics()),
+      }, $request_stats),
     ];
 
     return $response;
