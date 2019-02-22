@@ -176,7 +176,7 @@ class LrsService implements LrsServiceInterface {
     $query = $this->connection->select('h5p_analytics_statement_log', 'asl')
     ->fields('asl', ['code']);
     $query->groupBy('asl.code');
-    $query->addExpression('ANY_VALUE(asl.reason)', 'reason');
+    $query->addExpression('(SELECT sq.reason FROM h5p_analytics_statement_log sq WHERE sq.code = asl.code LIMIT 1)', 'reason');
     $query->addExpression('SUM(asl.count)', 'total');
 
     return $query->execute()->fetchAll();
@@ -189,9 +189,10 @@ class LrsService implements LrsServiceInterface {
     $query = $this->connection->select('h5p_analytics_request_log', 'arl')
     ->fields('arl', ['code']);
     $query->groupBy('arl.code');
-    $query->addExpression('ANY_VALUE(arl.reason)', 'reason');
-    $query->addExpression('ANY_VALUE(arl.error)', 'error');
+    $query->addExpression('(SELECT sqr.reason FROM h5p_analytics_request_log sqr WHERE sqr.code = arl.code LIMIT 1)', 'reason');
+    $query->addExpression('(SELECT sqe.error FROM h5p_analytics_request_log sqe WHERE sqe.code = arl.code LIMIT 1)', 'error');
     $query->addExpression('SUM(arl.count)', 'total');
+    ksm((string)$query);
 
     return $query->execute()->fetchAll();
   }
