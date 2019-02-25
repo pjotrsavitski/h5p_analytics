@@ -191,7 +191,7 @@ class LrsService implements LrsServiceInterface {
     $query->groupBy('arl.code');
     $query->addExpression('(SELECT sqr.reason FROM h5p_analytics_request_log sqr WHERE sqr.code = arl.code LIMIT 1)', 'reason');
     $query->addExpression('(SELECT sqe.error FROM h5p_analytics_request_log sqe WHERE sqe.code = arl.code LIMIT 1)', 'error');
-    $query->addExpression('SUM(arl.count)', 'total');
+    $query->addExpression('COUNT(*)', 'total');
 
     return $query->execute()->fetchAll();
   }

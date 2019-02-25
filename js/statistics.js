@@ -32,7 +32,7 @@
       }
 
       if (data.requests && data.requests.length > 0) {
-        addGraph($('.request-statistics > .graph-container', context), 'equest-statistics-graph', 'bar', data.requests.map(function(single) {
+        addGraph($('.request-statistics > .graph-container', context), 'request-statistics-graph', 'bar', data.requests.map(function(single) {
           return [single.code, parseInt(single.total)];
         }));
       }

@@ -65,6 +65,7 @@ class BatchQueue extends QueueWorkerBase {
         case 503:
           // These cases will allow data transfer to be retried
           throw $e;
+        break;
         default:
           // TODO See if we could detect timeout case and make the try again logic the default one instead
           // The only concern is tha case of request timing out and data potentially beind accepted by the server
