@@ -9,3 +9,9 @@ h5p_analytics.admin.reports.lrs_statitics_page:
   description: 'xAPI LRS statement statistics'
   parent: system.admin_reports
   route_name: h5p_analytics.lrs_statitics_page
+
+h5p_analytics.admin.reports.request_log_page:
+  title: 'H5P Analytics Request Log'
+  description: 'xAPI LRS request log'
+  parent: system.admin_reports
+  route_name: h5p_analytics.request_log_page

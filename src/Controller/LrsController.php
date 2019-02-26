@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Database\Connection;
 use Drupal\h5p_analytics\LrsServiceInterface;
+use Drupal\Core\Datetime\DateFormatter;
 
 /**
  * Class LrsController.
@@ -38,19 +39,39 @@ class LrsController extends ControllerBase {
   protected $lrs;
 
   /**
+   * Database connection
+   *
+   * @var Drupal\Core\Database\Connection
+   */
+  protected $connection;
+
+  /**
+   * Date formatter
+   *
+   * @var Drupal\Core\Datetime\DateFormatter
+   */
+  protected $dateFormatter;
+
+  /**
    * Controller constructor
    *
    * @param QueueFactory                  $queueFactory
    *   Queue factory
    * @param LoggerChannelFactoryInterface $loggerFactory
    *   Logger factory
+   * @param LrsServiceInterface $lrs
+   *   LRS service
    * @param Connection                    $connection
    *   Database connection
+   * @param DateFormatter                  $date_formatter
+   *   Date formatter
    */
-  public function __construct(QueueFactory $queue_factory, LoggerChannelFactoryInterface $logger_factory, LrsServiceInterface $lrs) {
+  public function __construct(QueueFactory $queue_factory, LoggerChannelFactoryInterface $logger_factory, LrsServiceInterface $lrs, Connection $connection, DateFormatter $date_formatter) {
     $this->statementsQueue = $queue_factory->get('h5p_analytics_statements');
     $this->logger = $logger_factory->get('h5p_analytics');
     $this->lrs = $lrs;
+    $this->connection = $connection;
+    $this->dateFormatter = $date_formatter;
   }
 
   /**
@@ -63,11 +84,13 @@ class LrsController extends ControllerBase {
    *   Controller instance
    */
   public static function create(ContainerInterface $container) {
-    $queueFactory = $container->get('queue');
-    $loggerFactory = $container->get('logger.factory');
+    $queue_factory = $container->get('queue');
+    $logger_factory = $container->get('logger.factory');
     $lrs = $container->get('h5p_analytics.lrs');
+    $connection = $container->get('database');
+    $date_formatter = $container->get('date.formatter');
 
-    return new static($queueFactory, $loggerFactory, $lrs);
+    return new static($queue_factory, $logger_factory, $lrs, $connection, $date_formatter);
   }
 
   /**
@@ -184,6 +207,34 @@ class LrsController extends ControllerBase {
       '#rows' => array_map(function($single) {
         return [$single->code, $single->reason, $single->error, $single->total];
       }, $request_stats),
+    ];
+
+    return $response;
+  }
+
+  /**
+   * LRS requests log page
+   *
+   * @return array
+   *   Page structure definition
+   */
+  public function requests() {
+    $query = $this->connection->select('h5p_analytics_request_log', 'arl')
+    ->fields('arl', ['code', 'reason', 'error', 'count', 'created'])
+    ->orderBy('created', 'DESC');
+    $pager = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender')->limit(25);
+    $results = $pager->execute()->fetchAll();
+
+    $response['table'] = [
+      '#type' =>'table',
+      '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Error'), $this->t('Statements'), $this->t('Timestamp')],
+      '#rows' => array_map(function($single) {
+        return [$single->code, $single->reason, $single->error, $single->count, $this->dateFormatter->format($single->created, 'long')];
+      }, $results),
+      '#empty' => $this->t('No requests found in the log') ,
+    ];
+    $response['pager'] = [
+      '#type' => 'pager',
     ];
 
     return $response;
