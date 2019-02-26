@@ -1,6 +1,6 @@
 
 h5p_analytics.module_configuration_form:
-  path: '/admin/config/h5p_analytics'
+  path: '/admin/config/system/h5p_analytics'
   defaults:
     _form: '\Drupal\h5p_analytics\Form\ModuleConfigurationForm'
     _title: 'H5P Analytics module configuration'

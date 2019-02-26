@@ -134,10 +134,10 @@ class ModuleConfigurationForm extends ConfigFormBase {
    */
   public function testConnectionCallback(array &$form, FormStateInterface $form_state) {
     $messenger = \Drupal::messenger();
+    $values = $form_state->getValues();
 
     try {
-      // TODO Might make sense to create s standalone method that would use the current values and not the already stored ones
-      $response = \Drupal::service('h5p_analytics.lrs')->sendToLrs([], TRUE);
+      $response = \Drupal::service('h5p_analytics.lrs')->makeStatementsHttpRequest($values['xapi_endpoint'], $values['key'], $values['secret'], []);
       $messenger->addMessage($this->t('Connection to LRS service is working well. Service responded with code %status and message %message.', ['%status' => $response->getStatusCode(), '%message' => $response->getReasonPhrase()]), 'status');
     } catch (RequestException $e) {
       $messenger->addMessage($this->t('Service responsed with code %code and message %message.', ['%code' => $e->getCode(), '%message' => $e->hasResponse() ? $e->getResponse()->getReasonPhrase() : '']), 'warning');

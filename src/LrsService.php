@@ -113,6 +113,22 @@ class LrsService implements LrsServiceInterface {
   /**
    * {@inheritdoc}
    */
+  public function makeStatementsHttpRequest(string $endpoint, string $key, string $secret, array $data) {
+    $options = [
+      'json' => $data,
+      'auth' => [$key, $secret],
+      'headers' => [
+        'X-Experience-API-Version' => '1.0.1',
+      ],
+      'timeout' => 45.0,
+    ];
+
+    return $this->httpClient->post($endpoint . '/statements', $options);
+  }
+
+  /**
+   * {@inheritdoc}
+   */
   public function sendToLrs(array $data, bool $bypass_request_log = FALSE) {
     $config = $this->configFactory->get(static::SETTINGS);
     $endpoint = $config->get('xapi_endpoint');
@@ -123,18 +139,8 @@ class LrsService implements LrsServiceInterface {
       throw new MissingConfigurationException('At least one of the required LRS configuration settings is missing!');
     }
 
-    $url = $endpoint . '/statements';
-    $options = [
-      'json' => $data,
-      'auth' => [$authUser, $authPassword],
-      'headers' => [
-        'X-Experience-API-Version' => '1.0.1',
-      ],
-      'timeout' => 45.0,
-    ];
-
     try {
-      return $this->httpClient->post($url, $options);
+      return $this->makeStatementsHttpRequest($endpoint, $authUser, $authPassword, $data);
     } catch (RequestException $e) {
       $debug = [
         'request' => [
