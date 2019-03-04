@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Drupal\Core\Database\Connection;
 use Drupal\h5p_analytics\LrsServiceInterface;
 use Drupal\Core\Datetime\DateFormatter;
+use Drupal\Core\Url;
 
 /**
  * Class LrsController.
@@ -220,19 +221,58 @@ class LrsController extends ControllerBase {
    */
   public function requests() {
     $query = $this->connection->select('h5p_analytics_request_log', 'arl')
-    ->fields('arl', ['code', 'reason', 'error', 'count', 'created'])
+    ->fields('arl', ['code', 'reason', 'error', 'count', 'data', 'created'])
     ->orderBy('created', 'DESC');
     $pager = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender')->limit(25);
     $results = $pager->execute()->fetchAll();
 
+
+
     $response['table'] = [
       '#type' =>'table',
-      '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Error'), $this->t('Statements'), $this->t('Timestamp')],
-      '#rows' => array_map(function($single) {
-        return [$single->code, $single->reason, $single->error, $single->count, $this->dateFormatter->format($single->created, 'long')];
-      }, $results),
-      '#empty' => $this->t('No requests found in the log') ,
+      '#header' => [$this->t('Code'), $this->t('Reason'), $this->t('Error'), $this->t('Statements'), $this->t('Timestamp'), ''],
+      '#attributes' => [
+        'class' => ['request-log'],
+      ],
+      '#empty' => $this->t('No requests found in the log'),
+      '#attached' => [
+        'library' => [
+          'h5p_analytics/request-log'
+        ],
+      ],
     ];
+    foreach($results as $index => $single) {
+      $response['table'][$index]['code'] = [
+        '#plain_text' => $single->code,
+      ];
+      $response['table'][$index]['reason'] = [
+        '#plain_text' => $single->reason,
+      ];
+      $response['table'][$index]['error'] = [
+        '#plain_text' => $single->error,
+      ];
+      $response['table'][$index]['count'] = [
+        '#markup' => (int) $single->count,
+      ];
+      $response['table'][$index]['timestamp'] = [
+        '#markup' => $this->dateFormatter->format($single->created, 'long'),
+      ];
+      if ($single->data && $single->data != '[]') {
+        $response['table'][$index]['statements'] = [
+          '#type' => 'link',
+          '#title' => $this->t('Data'),
+          '#url' => Url::fromUserInput('#'),
+          '#attributes' => [
+            'class' => ['button', 'statements'],
+            'data-statements' => $single->data,
+          ],
+        ];
+      } else {
+        $response['table'][$index]['statements'] = [
+          '#markup' => '',
+        ];
+      }
+    }
     $response['pager'] = [
       '#type' => 'pager',
     ];

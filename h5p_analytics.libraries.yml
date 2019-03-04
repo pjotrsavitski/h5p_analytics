@@ -41,3 +41,12 @@ statistics:
     - core/jquery
     - core/drupalSettings
     - h5p_analytics/c3
+request-log:
+  version: 1.x
+  js:
+    js/request-log.js: {}
+  dependencies:
+    - core/drupal
+    - core/jquery
+    - core/drupalSettings
+    - core/drupal.dialog
